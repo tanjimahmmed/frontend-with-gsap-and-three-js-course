@@ -1,3 +1,4 @@
 af-project-files-main
 af-project-files-main.zip
-.npm
+.DS_Store
+node_modules
