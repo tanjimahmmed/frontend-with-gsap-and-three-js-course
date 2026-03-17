@@ -56,6 +56,47 @@ function initThreeJS() {
 
         }, '<')
 
+        function toggleWireframe(model, isWireframe, opacity){
+            model.traverse(function(child){
+                if(child.isMesh && child.material){
+                    child.material.wireframe = isWireframe;
+                    child.material.opacity = opacity;
+                    child.material.transparent = true;
+                }
+            })
+        }
+
+        const contactTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: 'section.contact',
+                start: 'top 80%',
+                end: 'bottom center',
+                scrub: true,
+                onEnter: () => {
+                    toggleWireframe(ring, true, 1)
+                    contactRotation = true
+                },
+                onEnterBack: () => {
+                    toggleWireframe(ring, true, 1)
+                    contactRotation = true
+                },
+                onLeaveBack: () => {
+                    toggleWireframe(ring, false, 1)
+                    // contactRotation = true
+                },
+                onLeave: () => {
+                    toggleWireframe(ring, false, 1)
+                    // contactRotation = true
+                },
+            }
+        })
+
+        contactTl.to(ring.position, {
+            z: .3,
+            x: .4,
+            y: -.23
+        })
+
         const directionalLight = new THREE.DirectionalLight('lightblue', 10)
         directionalLight.position.z = 8
         scene.add(directionalLight)
@@ -106,6 +147,48 @@ function initThreeJS() {
     renderer.setSize(sizes.width, sizes.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+}
+
+function preloadFile(url) {
+  return new Promise((resolve, reject) => {
+    const fileType = url.split('.').pop().toLowerCase();
+
+    if (fileType === 'jpg' || fileType === 'png' || fileType === 'gif') {
+      // Preload images
+      const img = new Image();
+      img.src = url;
+      img.onload = resolve;
+      img.onerror = reject;
+    } else if (fileType === 'mp4' || fileType === 'webm') {
+      // Preload videos
+      const video = document.createElement('video');
+      video.src = url;
+      video.onloadeddata = resolve;
+      video.onerror = reject;
+    } else {
+      // Preload other file types (like GLB)
+      fetch(url)
+        .then(response => response.blob())
+        .then(resolve)
+        .catch(reject);
+    }
+  });
+}
+
+
+function preloadFiles(urls) {
+  const promises = urls.map(url => preloadFile(url));
+  
+  Promise.all(promises)
+    .then(() => {
+      console.log('All files preloaded');
+      // Hide loading screen and show the UI
+      document.querySelector('.loading-screen').classList.add('hide-loader')
+      //document.querySelector('.loading-screen').style.display = 'block'
+
+      //document.getElementById('mainUI').style.display = 'block';
+    })
+    .catch(error => console.error('Error preloading files:', error));
 }
 
 function animateWords() {
@@ -166,6 +249,79 @@ function inspectionSection() {
     })
 }
 
+function sliderSection() {
+    let mm = gsap.matchMedia();
+
+    mm.add('(min-width: 768px)', () => {
+        let slider = document.querySelector('.slider');
+        let sliderSections = gsap.utils.toArray('.slide')
+
+        let sliderTl = gsap.timeline({
+            defaults: {
+                ease: 'none'
+            },
+            scrollTrigger: {
+                trigger: slider,
+                pin: true,
+                scrub: 1,
+                end: () => '+=' + slider.offsetWidth
+            }
+        })
+
+        sliderTl
+        .to(slider, {
+            xPercent: -66
+        }, "<")
+        .to('.progress', {
+            width: '100%'
+        }, '<')
+
+        sliderSections.forEach((stop, index) => {
+            const slideText = new SplitType(stop.querySelector('.slide-p'), {types: 'chars'});
+
+            sliderTl.from(slideText.chars, {
+                opacity: 0,
+                y: 10,
+                stagger: .03,
+                scrollTrigger: {
+                    trigger: stop.querySelector('.slide-p'),
+                    start: 'top bottom',
+                    end: 'bottom center',
+                    containerAnimation: sliderTl,
+                    scrub: true
+                }
+            })
+        })
+    })
+}
+
+function contactSection(){
+    gsap.set('h4, .inner-contact span', {
+        yPercent: 100
+    })
+    gsap.set('.inner-contact p', {
+        opacity: 0
+    })
+
+    const contactTl = gsap.timeline({
+        scrollTrigger: {
+            trigger: '.inner-contact',
+            start: '-20% center',
+            end: '100% 40%',
+            scrub: true
+        }
+    })
+
+    contactTl.to('.line-top, .line-bottom', {
+        width: '100%'
+    })
+    .to('h4, .inner-contact span', {
+        yPercent: 0
+    })
+    .to('.inner-contact p', {
+        opacity: 1
+    })
+}
 
 function initRenderLoop() {
 
@@ -213,12 +369,15 @@ function setupSmoothScroll() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Preloader
+    preloadFiles(['ring.glb','images/rings.jpg','images/slide1.jpg','images/slide2.jpg','images/slide3.jpg','hands.mp4']);
     initThreeJS();
     initRenderLoop();
 
     animateWords();
     inspectionSection();
-    
+    sliderSection();
+    contactSection();
 
     setupSmoothScroll();
 })
