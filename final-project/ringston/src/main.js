@@ -48,7 +48,7 @@ function initThreeJS() {
         })
 
         tl.to(ring.position, {
-            z: 2.5,
+            z: 4.5,
             y: -0.34
         })
         tl.to(ring.rotation, {
@@ -108,6 +108,35 @@ function initThreeJS() {
 
 }
 
+function animateWords() {
+    const words = ['Romance', 'Rings', 'Relationships'];
+    let currentIndex = 0;
+    let split;
+    const textElement = document.querySelector('.primary-h1 span');
+
+    function updateText(){
+        textElement.textContent = words[currentIndex];
+        split = new SplitType(textElement, {type: 'chars'});
+        animateChars(split.chars);
+        currentIndex = (currentIndex + 1) % words.length;
+    }
+
+    function animateChars(chars){
+        gsap.from(chars, {
+            yPercent: 100,
+            stagger: 0.03,
+            duration: 1.5,
+            ease: 'power4.out',
+            onComplete: () => {
+                if(split){
+                    split.revert()
+                }
+            }
+        })
+    }
+    setInterval(updateText, 3000)
+}
+
 
 function initRenderLoop() {
 
@@ -145,7 +174,21 @@ function initRenderLoop() {
   tick()
 }
 
+function setupSmoothScroll() {
+  const lenis = new Lenis();
+  function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+  }
+  requestAnimationFrame(raf);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initThreeJS();
     initRenderLoop();
+    
+    animateWords();
+    
+
+    setupSmoothScroll();
 })
